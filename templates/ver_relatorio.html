@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+
+{% block title %}Relatório: {{ planilha.nome }} - Sistema de Planilhas{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-detail-card {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+    .report-header {
+        background-color: #f8f9fa;
+        padding: 1.5rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .report-body {
+        padding: 2rem;
+    }
+    .report-footer {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-top: 1px solid #dee2e6;
+    }
+    .data-group {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #eee;
+    }
+    .data-group:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+    }
+    .data-label {
+        font-weight: 500;
+        color: #6c757d;
+    }
+    .data-value {
+        font-size: 1.1rem;
+    }
+    .timestamp {
+        color: #6c757d;
+        font-size: 0.875rem;
+    }
+    .metadata-tag {
+        display: inline-block;
+        padding: 0.35em 0.65em;
+        font-size: 0.75em;
+        font-weight: 700;
+        line-height: 1;
+        color: #fff;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: 0.25rem;
+        background-color: #0d6efd;
+        margin-right: 0.5rem;
+    }
+    .print-section {
+        display: none;
+    }
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        .print-section {
+            display: block;
+        }
+        .container {
+            width: 100%;
+            max-width: 100%;
+        }
+        body {
+            padding-top: 0 !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-4 no-print">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('relatorios') }}">Relatórios</a></li>
+            <li class="breadcrumb-item active">{{ planilha.nome }}</li>
+        </ol>
+    </nav>
+</div>
+
+<!-- Cabeçalho para impressão -->
+<div class="print-section mb-4">
+    <div class="text-center">
+        <h2>Sistema de Planilhas</h2>
+        <h3>{{ planilha.nome }}</h3>
+        <p>Relatório gerado em: {{ dados.created_at.strftime('%d/%m/%Y às %H:%M') }}</p>
+        <hr>
+    </div>
+</div>
+
+<div class="report-detail-card">
+    <div class="report-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="mb-0">{{ planilha.nome }}</h2>
+            <div class="no-print">
+                <button onclick="window.print()" class="btn btn-outline-secondary me-2">
+                    <i class="fas fa-print me-1"></i>Imprimir
+                </button>
+                <a href="{{ url_for('relatorios') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-1"></i>Voltar
+                </a>
+            </div>
+        </div>
+        <p class="text-muted mb-0 mt-2">{{ planilha.descricao }}</p>
+        <div class="mt-3">
+            <span class="timestamp">
+                <i class="far fa-calendar-alt me-1"></i>Criado em: {{ dados.created_at.strftime('%d/%m/%Y') }}
+            </span>
+            <span class="timestamp ms-3">
+                <i class="far fa-clock me-1"></i>Horário: {{ dados.created_at.strftime('%H:%M') }}
+            </span>
+        </div>
+    </div>
+
+    <div class="report-body">
+        <div class="alert alert-info mb-4">
+            <i class="fas fa-info-circle me-2"></i>
+            Este é um relatório com os dados que você inseriu. Você pode imprimir ou salvar como PDF para referência futura.
+        </div>
+
+        <div class="data-group">
+            <h4 class="mb-3">Dados da Planilha</h4>
+            
+            <div class="row">
+                {% for chave, valor in dados_json.items() %}
+                    <div class="col-md-6 mb-3">
+                        <div class="data-label">{{ chave }}</div>
+                        <div class="data-value">
+                            {% if valor is none %}
+                                <span class="text-muted">Não informado</span>
+                            {% elif valor is boolean %}
+                                {% if valor %}
+                                    <span class="badge bg-success">Sim</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Não</span>
+                                {% endif %}
+                            {% elif valor|string|lower == 'true' %}
+                                <span class="badge bg-success">Sim</span>
+                            {% elif valor|string|lower == 'false' %}
+                                <span class="badge bg-danger">Não</span>
+                            {% else %}
+                                {{ valor }}
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Seção para resultados calculados (se aplicável) -->
+        {% if resultados_calculados is defined and resultados_calculados %}
+            <div class="data-group">
+                <h4 class="mb-3">Resultados Calculados</h4>
+                
+                <div class="row">
+                    {% for chave, valor in resultados_calculados.items() %}
+                        <div class="col-md-6 mb-3">
+                            <div class="data-label">{{ chave }}</div>
+                            <div class="data-value">{{ valor }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="report-footer">
+        <div class="row">
+            <div class="col-md-6">
+                <small class="text-muted">
+                    ID do registro: {{ dados.id }}<br>
+                    Usuário: {{ current_user.username }}
+                </small>
+            </div>
+            <div class="col-md-6 text-end no-print">
+                <a href="{{ url_for('ver_planilha', planilha_id=planilha.id) }}" class="btn btn-primary">
+                    <i class="fas fa-plus-circle me-1"></i>Nova entrada
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Formatação adicional de dados se necessário
+        // Ex: formatar datas, números, etc.
+    });
+</script>
+{% endblock %}

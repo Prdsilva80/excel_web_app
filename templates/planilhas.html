@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ planilha.nome }} - Sistema de Planilhas{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+    .form-header {
+        background-color: #f8f9fa;
+        padding: 1.5rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .form-body {
+        padding: 2rem;
+    }
+    .form-footer {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-top: 1px solid #dee2e6;
+    }
+    .field-row {
+        margin-bottom: 1.5rem;
+    }
+    .field-row:last-child {
+        margin-bottom: 0;
+    }
+    .form-label {
+        font-weight: 500;
+    }
+    .required-field::after {
+        content: "*";
+        color: red;
+        margin-left: 4px;
+    }
+    .help-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+    .field-section {
+        margin-bottom: 2.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #eee;
+    }
+    .field-section:last-child {
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item active">{{ planilha.nome }}</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="form-card">
+    <div class="form-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="mb-0">{{ planilha.nome }}</h2>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Voltar
+            </a>
+        </div>
+        <p class="text-muted mb-0 mt-2">{{ planilha.descricao }}</p>
+    </div>
+
+    <form method="post" action="{{ url_for('salvar_planilha', planilha_id=planilha.id) }}">
+        <div class="form-body">
+            {% if campos %}
+                <div class="alert alert-info mb-4">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Preencha os campos abaixo com as informações solicitadas. Campos marcados com <span class="text-danger">*</span> são obrigatórios.
+                </div>
+
+                <div class="field-section">
+                    <h4 class="mb-3">Dados Gerais</h4>
+                    
+                    <div class="row">
+                        {% for campo in campos %}
+                            <div class="col-md-6 field-row">
+                                <label for="{{ campo.nome }}" class="form-label {% if not campo.nullable %}required-field{% endif %}">
+                                    {{ campo.nome }}
+                                </label>
+                                
+                                {% if campo.tipo == 'checkbox' %}
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" id="{{ campo.nome }}" name="{{ campo.nome }}" 
+                                            {% if campo.valor %}checked{% endif %}>
+                                        <label class="form-check-label" for="{{ campo.nome }}">Sim</label>
+                                    </div>
+                                {% elif campo.tipo == 'date' %}
+                                    <input type="date" class="form-control" id="{{ campo.nome }}" name="{{ campo.nome }}" 
+                                        value="{{ campo.valor }}" {% if not campo.nullable %}required{% endif %}>
+                                {% elif campo.tipo == 'number' %}
+                                    <input type="number" class="form-control" id="{{ campo.nome }}" name="{{ campo.nome }}" 
+                                        value="{{ campo.valor }}" step="any" {% if not campo.nullable %}required{% endif %}>
+                                {% else %}
+                                    <input type="text" class="form-control" id="{{ campo.nome }}" name="{{ campo.nome }}" 
+                                        value="{{ campo.valor }}" {% if not campo.nullable %}required{% endif %}>
+                                {% endif %}
+                                
+                                <div class="help-text">
+                                    {% if 'date' in campo.tipo %}
+                                        Formato: DD/MM/AAAA
+                                    {% elif 'float' in campo.tipo %}
+                                        Use ponto como separador decimal (ex: 123.45)
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Esta planilha não possui campos definidos ou ocorreu um erro na importação.
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="form-footer">
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary" {% if not campos %}disabled{% endif %}>
+                    <i class="fas fa-save me-1"></i>Salvar Dados
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Formatação dinâmica para campos numéricos
+        const numericInputs = document.querySelectorAll('input[type="number"]');
+        numericInputs.forEach(function(input) {
+            input.addEventListener('blur', function() {
+                if (this.value) {
+                    // Formata o número se necessário
+                    // Para implementação completa, pode-se usar bibliotecas como Cleave.js
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

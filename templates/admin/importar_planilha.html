@@ -1,0 +1,313 @@
+{% extends 'base.html' %}
+
+{% block title %}Importar Planilha - Sistema de Planilhas{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .form-header {
+        background-color: #f8f9fa;
+        padding: 1.5rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .form-body {
+        padding: 2rem;
+    }
+    .form-footer {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-top: 1px solid #dee2e6;
+    }
+    .form-label {
+        font-weight: 500;
+    }
+    .required-field::after {
+        content: "*";
+        color: red;
+        margin-left: 4px;
+    }
+    .upload-area {
+        border: 2px dashed #dee2e6;
+        border-radius: 0.5rem;
+        padding: 2rem;
+        text-align: center;
+        background-color: #f8f9fa;
+        transition: all 0.3s;
+        cursor: pointer;
+    }
+    .upload-area:hover, .upload-area.dragover {
+        border-color: #0d6efd;
+        background-color: rgba(13, 110, 253, 0.05);
+    }
+    .upload-icon {
+        font-size: 3rem;
+        color: #0d6efd;
+        margin-bottom: 1rem;
+    }
+    .file-preview {
+        display: none;
+        margin-top: 1.5rem;
+        padding: 1rem;
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        background-color: white;
+    }
+    .preview-icon {
+        font-size: 2rem;
+        margin-right: 1rem;
+        color: #198754;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('admin') }}">Administração</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('gerenciar_planilhas') }}">Planilhas</a></li>
+            <li class="breadcrumb-item active">Importar Planilha</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="form-card">
+    <div class="form-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="mb-0">Importar Planilha Excel</h2>
+            <a href="{{ url_for('gerenciar_planilhas') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Voltar
+            </a>
+        </div>
+        <p class="text-muted mb-0 mt-2">Adicione uma nova planilha ao sistema para disponibilizar aos usuários.</p>
+    </div>
+    
+    <form method="post" action="{{ url_for('importar_planilha') }}" enctype="multipart/form-data" id="uploadForm">
+        <div class="form-body">
+            <div class="alert alert-info mb-4">
+                <i class="fas fa-info-circle me-2"></i>
+                Selecione um arquivo Excel (.xls ou .xlsx) para importar. O sistema analisará a estrutura e as fórmulas automaticamente.
+                Campos marcados com <span class="text-danger">*</span> são obrigatórios.
+            </div>
+            
+            <div class="mb-4">
+                <label for="nome" class="form-label required-field">Nome da Planilha</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-file-alt"></i></span>
+                    <input type="text" class="form-control" id="nome" name="nome" required autofocus placeholder="Ex.: Planilha de Orçamento Mensal">
+                </div>
+                <div class="form-text">Um nome descritivo para identificar a planilha no sistema.</div>
+            </div>
+            
+            <div class="mb-4">
+                <label for="descricao" class="form-label required-field">Descrição</label>
+                <textarea class="form-control" id="descricao" name="descricao" rows="3" required placeholder="Descreva o propósito desta planilha e instruções básicas para os usuários."></textarea>
+                <div class="form-text">Uma breve descrição do propósito e instruções para preenchimento.</div>
+            </div>
+            
+            <div class="mb-4">
+                <label class="form-label required-field">Arquivo Excel</label>
+                <div class="upload-area" id="dropArea">
+                    <div class="upload-icon">
+                        <i class="fas fa-file-excel"></i>
+                    </div>
+                    <h4>Arraste e solte o arquivo Excel aqui</h4>
+                    <p class="text-muted">ou</p>
+                    <input type="file" id="arquivo" name="arquivo" class="d-none" accept=".xls,.xlsx">
+                    <button type="button" class="btn btn-primary" id="browseBtn">
+                        <i class="fas fa-folder-open me-1"></i>Selecionar Arquivo
+                    </button>
+                    <div class="form-text mt-2">Formatos aceitos: .xls, .xlsx</div>
+                </div>
+                
+                <div class="file-preview" id="filePreview">
+                    <div class="d-flex align-items-center">
+                        <div class="preview-icon">
+                            <i class="fas fa-file-excel"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h5 class="mb-1" id="fileName">arquivo.xlsx</h5>
+                            <p class="mb-0 text-muted" id="fileSize">0 KB</p>
+                        </div>
+                        <button type="button" class="btn btn-outline-danger" id="removeFileBtn">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="convertDates" name="convertDates" checked>
+                    <label class="form-check-label" for="convertDates">
+                        Converter datas para formato brasileiro (DD/MM/AAAA)
+                    </label>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="processFormulas" name="processFormulas" checked>
+                    <label class="form-check-label" for="processFormulas">
+                        Processar fórmulas da planilha
+                    </label>
+                </div>
+                <div class="form-text">Permite que o sistema replique a lógica de cálculo da planilha original.</div>
+            </div>
+        </div>
+        
+        <div class="form-footer">
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('gerenciar_planilhas') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+                    <i class="fas fa-upload me-1"></i>Importar Planilha
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('arquivo');
+        const browseBtn = document.getElementById('browseBtn');
+        const filePreview = document.getElementById('filePreview');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const removeFileBtn = document.getElementById('removeFileBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const uploadForm = document.getElementById('uploadForm');
+        
+        // Abrir o seletor de arquivo ao clicar no botão ou na área de drop
+        browseBtn.addEventListener('click', function() {
+            fileInput.click();
+        });
+        
+        dropArea.addEventListener('click', function(e) {
+            if (e.target !== browseBtn && !e.target.closest('#browseBtn')) {
+                fileInput.click();
+            }
+        });
+        
+        // Manipulação de eventos de drag and drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            dropArea.classList.add('dragover');
+        }
+        
+        function unhighlight() {
+            dropArea.classList.remove('dragover');
+        }
+        
+        // Manipular arquivo solto na área de drop
+        dropArea.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                updateFilePreview(files[0]);
+            }
+        }
+        
+        // Manipular seleção de arquivo via input
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                updateFilePreview(this.files[0]);
+            }
+        });
+        
+        // Atualizar preview do arquivo
+        function updateFilePreview(file) {
+            const validExtensions = ['.xls', '.xlsx'];
+            const fileExt = '.' + file.name.split('.').pop().toLowerCase();
+            
+            if (!validExtensions.includes(fileExt)) {
+                alert('Por favor, selecione um arquivo Excel (.xls ou .xlsx).');
+                fileInput.value = '';
+                return;
+            }
+            
+            // Mostrar informações do arquivo
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            filePreview.style.display = 'block';
+            dropArea.classList.add('d-none');
+            submitBtn.disabled = false;
+        }
+        
+        // Remover arquivo
+        removeFileBtn.addEventListener('click', function() {
+            fileInput.value = '';
+            filePreview.style.display = 'none';
+            dropArea.classList.remove('d-none');
+            submitBtn.disabled = true;
+        });
+        
+        // Formatar tamanho do arquivo
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // Validação do formulário antes de enviar
+        uploadForm.addEventListener('submit', function(e) {
+            if (fileInput.files.length === 0) {
+                e.preventDefault();
+                alert('Por favor, selecione um arquivo Excel para importar.');
+                return false;
+            }
+            
+            const nomeInput = document.getElementById('nome');
+            const descricaoInput = document.getElementById('descricao');
+            
+            if (nomeInput.value.trim() === '') {
+                e.preventDefault();
+                alert('Por favor, informe um nome para a planilha.');
+                nomeInput.focus();
+                return false;
+            }
+            
+            if (descricaoInput.value.trim() === '') {
+                e.preventDefault();
+                alert('Por favor, forneça uma descrição para a planilha.');
+                descricaoInput.focus();
+                return false;
+            }
+            
+            return true;
+        });
+    });
+</script>
+{% endblock %}

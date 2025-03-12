@@ -1,0 +1,381 @@
+{% extends 'base.html' %}
+
+{% block title %}Gerenciar Planilhas - Sistema de Planilhas{% endblock %}
+
+{% block extra_css %}
+<style>
+    .table-responsive {
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+    .search-box {
+        max-width: 400px;
+    }
+    .filter-box {
+        max-width: 200px;
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(13, 110, 253, 0.05);
+    }
+    .table th {
+        background-color: #f8f9fa;
+    }
+    .planilha-actions {
+        white-space: nowrap;
+    }
+    .planilha-description {
+        max-width: 300px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .planilha-users {
+        min-width: 80px;
+        text-align: center;
+    }
+    .card-planilha {
+        height: 100%;
+        transition: all 0.3s;
+    }
+    .card-planilha:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    .card-planilha .card-footer {
+        background-color: rgba(0, 0, 0, 0.02);
+    }
+    .view-toggle .btn {
+        padding: 0.4rem 0.75rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('admin') }}">Administração</a></li>
+            <li class="breadcrumb-item active">Gerenciar Planilhas</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Gerenciar Planilhas</h2>
+    <a href="{{ url_for('importar_planilha') }}" class="btn btn-primary">
+        <i class="fas fa-file-upload me-1"></i>Importar Planilha
+    </a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header bg-light">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <div class="input-group search-box">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control" id="searchPlanilha" placeholder="Buscar por nome..." onkeyup="filterPlanilhas()">
+                </div>
+            </div>
+            <div class="col-md-6 text-md-end mt-3 mt-md-0">
+                <div class="d-inline-block view-toggle me-2">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-primary active" id="listViewBtn">
+                            <i class="fas fa-list"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" id="gridViewBtn">
+                            <i class="fas fa-th-large"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="d-inline-block filter-box">
+                    <select class="form-select" id="sortPlanilhas" onchange="sortPlanilhas()">
+                        <option value="name-asc">Nome (A-Z)</option>
+                        <option value="name-desc">Nome (Z-A)</option>
+                        <option value="date-desc">Mais recentes</option>
+                        <option value="date-asc">Mais antigas</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Visualização em Lista -->
+    <div class="list-view">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0" id="planilhasTable">
+                <thead>
+                    <tr>
+                        <th style="width: 5%">#</th>
+                        <th style="width: 20%">Nome</th>
+                        <th style="width: 30%">Descrição</th>
+                        <th style="width: 15%">Data de Importação</th>
+                        <th style="width: 10%">Usuários</th>
+                        <th style="width: 20%">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if planilhas %}
+                        {% for planilha in planilhas %}
+                            <tr>
+                                <td>{{ planilha.id }}</td>
+                                <td>{{ planilha.nome }}</td>
+                                <td class="planilha-description" title="{{ planilha.descricao }}">
+                                    {{ planilha.descricao }}
+                                </td>
+                                <td>{{ planilha.created_at.strftime('%d/%m/%Y') }}</td>
+                                <td class="planilha-users">
+                                    {% set users_count = namespace(count=0) %}
+                                    {% for dado in planilha.dados %}
+                                        {% if dado.user_id not in users_count.ids %}
+                                            {% set users_count.count = users_count.count + 1 %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    <span class="badge bg-primary">{{ users_count.count }}</span>
+                                </td>
+                                <td class="planilha-actions">
+                                    <a href="{{ url_for('ver_planilha', planilha_id=planilha.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i> Visualizar
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deletePlanilhaModal{{ planilha.id }}">
+                                        <i class="fas fa-trash-alt"></i> Excluir
+                                    </button>
+                                    
+                                    <!-- Modal de Confirmação de Exclusão -->
+                                    <div class="modal fade" id="deletePlanilhaModal{{ planilha.id }}" tabindex="-1" aria-labelledby="deletePlanilhaModalLabel{{ planilha.id }}" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="deletePlanilhaModalLabel{{ planilha.id }}">Confirmar Exclusão</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <p>Tem certeza que deseja excluir a planilha <strong>{{ planilha.nome }}</strong>?</p>
+                                                    <p class="text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Esta ação não pode ser desfeita e excluirá todos os dados relacionados.</p>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                    <form action="{{ url_for('excluir_planilha', planilha_id=planilha.id) }}" method="post" class="d-inline">
+                                                        <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <div class="alert alert-info mb-0">
+                                    <i class="fas fa-info-circle me-2"></i>Nenhuma planilha importada. 
+                                    <a href="{{ url_for('importar_planilha') }}" class="alert-link">Importe sua primeira planilha</a>.
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Visualização em Grid -->
+    <div class="grid-view p-3" style="display: none;">
+        {% if planilhas %}
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for planilha in planilhas %}
+                    <div class="col planilha-item">
+                        <div class="card card-planilha">
+                            <div class="card-header">
+                                <h5 class="mb-0">{{ planilha.nome }}</h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">{{ planilha.descricao }}</p>
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <span class="badge bg-primary">
+                                        <i class="fas fa-users me-1"></i>
+                                        {% set users_count = namespace(count=0) %}
+                                        {% for dado in planilha.dados %}
+                                            {% if dado.user_id not in users_count.ids %}
+                                                {% set users_count.count = users_count.count + 1 %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        {{ users_count.count }} usuário(s)
+                                    </span>
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-calendar-alt me-1"></i>
+                                        {{ planilha.created_at.strftime('%d/%m/%Y') }}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="card-footer d-flex justify-content-between">
+                                <a href="{{ url_for('ver_planilha', planilha_id=planilha.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye me-1"></i>Visualizar
+                                </a>
+                                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deletePlanilhaModal{{ planilha.id }}Grid">
+                                    <i class="fas fa-trash-alt me-1"></i>Excluir
+                                </button>
+                                
+                                <!-- Modal de Confirmação de Exclusão (Grid View) -->
+                                <div class="modal fade" id="deletePlanilhaModal{{ planilha.id }}Grid" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Confirmar Exclusão</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p>Tem certeza que deseja excluir a planilha <strong>{{ planilha.nome }}</strong>?</p>
+                                                <p class="text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Esta ação não pode ser desfeita e excluirá todos os dados relacionados.</p>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                <form action="{{ url_for('excluir_planilha', planilha_id=planilha.id) }}" method="post" class="d-inline">
+                                                    <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>Nenhuma planilha importada. 
+                <a href="{{ url_for('importar_planilha') }}" class="alert-link">Importe sua primeira planilha</a>.
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="card-footer bg-light">
+        <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">Total de planilhas: {{ planilhas|length }}</small>
+            <a href="{{ url_for('admin') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-arrow-left me-1"></i>Voltar
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const listViewBtn = document.getElementById('listViewBtn');
+        const gridViewBtn = document.getElementById('gridViewBtn');
+        const listView = document.querySelector('.list-view');
+        const gridView = document.querySelector('.grid-view');
+        const searchInput = document.getElementById('searchPlanilha');
+        const sortSelect = document.getElementById('sortPlanilhas');
+        
+        // Toggle de visualização (lista/grid)
+        listViewBtn.addEventListener('click', function() {
+            listView.style.display = 'block';
+            gridView.style.display = 'none';
+            listViewBtn.classList.add('active');
+            gridViewBtn.classList.remove('active');
+        });
+        
+        gridViewBtn.addEventListener('click', function() {
+            listView.style.display = 'none';
+            gridView.style.display = 'block';
+            gridViewBtn.classList.add('active');
+            listViewBtn.classList.remove('active');
+        });
+        
+        // Busca e ordenação das planilhas
+        window.filterPlanilhas = function() {
+            const searchText = searchInput.value.toLowerCase();
+            
+            // Filtrar na visualização em lista
+            const tableRows = document.querySelectorAll('#planilhasTable tbody tr');
+            tableRows.forEach(row => {
+                if (row.cells.length < 2) return; // Ignorar linhas de "nenhuma planilha"
+                
+                const nome = row.cells[1].textContent.toLowerCase();
+                const descricao = row.cells[2].textContent.toLowerCase();
+                
+                if (nome.includes(searchText) || descricao.includes(searchText)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Filtrar na visualização em grid
+            const gridItems = document.querySelectorAll('.planilha-item');
+            gridItems.forEach(item => {
+                const nome = item.querySelector('.card-header h5').textContent.toLowerCase();
+                const descricao = item.querySelector('.card-text').textContent.toLowerCase();
+                
+                if (nome.includes(searchText) || descricao.includes(searchText)) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        };
+        
+        window.sortPlanilhas = function() {
+            const sortValue = sortSelect.value;
+            
+            // Ordenar na visualização em lista
+            const tableBody = document.querySelector('#planilhasTable tbody');
+            const tableRows = Array.from(tableBody.querySelectorAll('tr'));
+            
+            if (tableRows.length <= 1 || tableRows[0].cells.length < 2) return; // Ignorar se "nenhuma planilha"
+            
+            tableRows.sort((a, b) => {
+                if (sortValue === 'name-asc') {
+                    return a.cells[1].textContent.localeCompare(b.cells[1].textContent);
+                } else if (sortValue === 'name-desc') {
+                    return b.cells[1].textContent.localeCompare(a.cells[1].textContent);
+                } else if (sortValue === 'date-desc') {
+                    const dateA = new Date(a.cells[3].textContent.split('/').reverse().join('-'));
+                    const dateB = new Date(b.cells[3].textContent.split('/').reverse().join('-'));
+                    return dateB - dateA;
+                } else if (sortValue === 'date-asc') {
+                    const dateA = new Date(a.cells[3].textContent.split('/').reverse().join('-'));
+                    const dateB = new Date(b.cells[3].textContent.split('/').reverse().join('-'));
+                    return dateA - dateB;
+                }
+                return 0;
+            });
+            
+            // Limpar e readicionar linhas ordenadas
+            tableRows.forEach(row => tableBody.appendChild(row));
+            
+            // Ordenar na visualização em grid
+            const gridContainer = document.querySelector('.grid-view .row');
+            const gridItems = Array.from(gridContainer.querySelectorAll('.planilha-item'));
+            
+            if (gridItems.length === 0) return;
+            
+            gridItems.sort((a, b) => {
+                const nameA = a.querySelector('.card-header h5').textContent;
+                const nameB = b.querySelector('.card-header h5').textContent;
+                const dateA = new Date(a.querySelector('.badge.bg-secondary').textContent.trim().split(' ')[1].split('/').reverse().join('-'));
+                const dateB = new Date(b.querySelector('.badge.bg-secondary').textContent.trim().split(' ')[1].split('/').reverse().join('-'));
+                
+                if (sortValue === 'name-asc') {
+                    return nameA.localeCompare(nameB);
+                } else if (sortValue === 'name-desc') {
+                    return nameB.localeCompare(nameA);
+                } else if (sortValue === 'date-desc') {
+                    return dateB - dateA;
+                } else if (sortValue === 'date-asc') {
+                    return dateA - dateB;
+                }
+                return 0;
+            });
+            
+            // Limpar e readicionar cards ordenados
+            gridItems.forEach(item => gridContainer.appendChild(item));
+        };
+    });
+</script>
+{% endblock %}

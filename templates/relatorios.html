@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+
+{% block title %}Relatórios - Sistema de Planilhas{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-card {
+        transition: all 0.3s ease;
+        margin-bottom: 1.5rem;
+    }
+    .report-card:hover {
+        transform: translateY(-5px);
+    }
+    .accordion-button:not(.collapsed) {
+        background-color: rgba(13, 110, 253, 0.1);
+        color: #0d6efd;
+    }
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    .timeline-item {
+        position: relative;
+        padding-bottom: 1.5rem;
+    }
+    .timeline-item:last-child {
+        padding-bottom: 0;
+    }
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -23px;
+        top: 0;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background-color: #0d6efd;
+        z-index: 1;
+    }
+    .timeline-item::after {
+        content: '';
+        position: absolute;
+        left: -16px;
+        top: 16px;
+        width: 2px;
+        height: calc(100% - 16px);
+        background-color: #dee2e6;
+    }
+    .timeline-item:last-child::after {
+        display: none;
+    }
+    .timeline-date {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-bottom: 0.25rem;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        background-color: #f8f9fa;
+        border-radius: 0.5rem;
+    }
+    .empty-state-icon {
+        font-size: 3rem;
+        color: #dee2e6;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item active">Relatórios</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Meus Relatórios</h2>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary">
+        <i class="fas fa-table me-1"></i>Ver Planilhas
+    </a>
+</div>
+
+{% if historico %}
+    <div class="row">
+        {% for planilha_id, info in historico.items() %}
+            <div class="col-md-6">
+                <div class="card report-card">
+                    <div class="card-header">
+                        <h4 class="mb-0">{{ info.planilha.nome }}</h4>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text text-muted mb-3">{{ info.planilha.descricao }}</p>
+                        
+                        <h5>Histórico de dados</h5>
+                        <div class="timeline">
+                            {% for dado in info.dados[:5] %}
+                                <div class="timeline-item">
+                                    <div class="timeline-date">
+                                        <i class="far fa-calendar-alt me-1"></i>{{ dado.data.strftime('%d/%m/%Y') }}
+                                        <span class="ms-2">
+                                            <i class="far fa-clock me-1"></i>{{ dado.data.strftime('%H:%M') }}
+                                        </span>
+                                    </div>
+                                    <div class="timeline-content">
+                                        <a href="{{ url_for('ver_relatorio', dados_id=dado.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye me-1"></i>Visualizar dados
+                                        </a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                            
+                            {% if info.dados|length > 5 %}
+                                <div class="mt-2 text-center">
+                                    <button class="btn btn-sm btn-link" type="button" data-bs-toggle="collapse" 
+                                            data-bs-target="#moreData{{ planilha_id }}">
+                                        Ver mais ({{ info.dados|length - 5 }})
+                                    </button>
+                                    
+                                    <div class="collapse" id="moreData{{ planilha_id }}">
+                                        {% for dado in info.dados[5:] %}
+                                            <div class="timeline-item mt-2">
+                                                <div class="timeline-date">
+                                                    <i class="far fa-calendar-alt me-1"></i>{{ dado.data.strftime('%d/%m/%Y') }}
+                                                    <span class="ms-2">
+                                                        <i class="far fa-clock me-1"></i>{{ dado.data.strftime('%H:%M') }}
+                                                    </span>
+                                                </div>
+                                                <div class="timeline-content">
+                                                    <a href="{{ url_for('ver_relatorio', dados_id=dado.id) }}" class="btn btn-sm btn-outline-primary">
+                                                        <i class="fas fa-eye me-1"></i>Visualizar dados
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">Total de entradas: {{ info.dados|length }}</small>
+                            <a href="{{ url_for('ver_planilha', planilha_id=planilha_id) }}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus-circle me-1"></i>Nova entrada
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">
+            <i class="fas fa-chart-area"></i>
+        </div>
+        <h3>Nenhum relatório disponível</h3>
+        <p class="text-muted">Você ainda não possui dados salvos. Acesse as planilhas disponíveis e comece a inserir seus dados.</p>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary mt-3">
+            <i class="fas fa-table me-1"></i>Ver Planilhas Disponíveis
+        </a>
+    </div>
+{% endif %}
+{% endblock %}

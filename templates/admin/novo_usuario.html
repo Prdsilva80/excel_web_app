@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+
+{% block title %}Novo Usuário - Sistema de Planilhas{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-card {
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .form-header {
+        background-color: #f8f9fa;
+        padding: 1.5rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .form-body {
+        padding: 2rem;
+    }
+    .form-footer {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-top: 1px solid #dee2e6;
+    }
+    .form-label {
+        font-weight: 500;
+    }
+    .required-field::after {
+        content: "*";
+        color: red;
+        margin-left: 4px;
+    }
+    .password-toggle {
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('admin') }}">Administração</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('gerenciar_usuarios') }}">Usuários</a></li>
+            <li class="breadcrumb-item active">Novo Usuário</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="form-card">
+    <div class="form-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="mb-0">Novo Usuário</h2>
+            <a href="{{ url_for('gerenciar_usuarios') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Voltar
+            </a>
+        </div>
+    </div>
+    
+    <form method="post" action="{{ url_for('novo_usuario') }}">
+        <div class="form-body">
+            <div class="alert alert-info mb-4">
+                <i class="fas fa-info-circle me-2"></i>
+                Preencha os campos abaixo para criar um novo usuário. Campos marcados com <span class="text-danger">*</span> são obrigatórios.
+            </div>
+            
+            <div class="mb-3">
+                <label for="username" class="form-label required-field">Nome de Usuário</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+                    <input type="text" class="form-control" id="username" name="username" required autofocus>
+                </div>
+                <div class="form-text">O nome que será exibido no sistema.</div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="email" class="form-label required-field">Email</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                    <input type="email" class="form-control" id="email" name="email" required>
+                </div>
+                <div class="form-text">Será usado para login no sistema.</div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="password" class="form-label required-field">Senha</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-key"></i></span>
+                    <input type="password" class="form-control" id="password" name="password" required>
+                    <button class="btn btn-outline-secondary password-toggle" type="button" id="togglePassword">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <div class="form-text">Mínimo de 6 caracteres. Use letras, números e símbolos para maior segurança.</div>
+                <div class="progress mt-2" style="height: 5px;">
+                    <div class="progress-bar" id="passwordStrength" role="progressbar" style="width: 0%"></div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="confirmPassword" class="form-label required-field">Confirmar Senha</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                    <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
+                </div>
+                <div id="passwordMatch" class="form-text"></div>
+            </div>
+            
+            <div class="mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="is_admin" name="is_admin">
+                    <label class="form-check-label" for="is_admin">
+                        Este usuário é administrador
+                    </label>
+                </div>
+                <div class="form-text">Administradores podem gerenciar usuários e planilhas.</div>
+            </div>
+        </div>
+        
+        <div class="form-footer">
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('gerenciar_usuarios') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    <i class="fas fa-user-plus me-1"></i>Criar Usuário
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const password = document.getElementById('password');
+        const confirmPassword = document.getElementById('confirmPassword');
+        const passwordMatch = document.getElementById('passwordMatch');
+        const passwordStrength = document.getElementById('passwordStrength');
+        const submitBtn = document.getElementById('submitBtn');
+        const togglePassword = document.getElementById('togglePassword');
+        
+        // Toggle password visibility
+        togglePassword.addEventListener('click', function() {
+            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+            password.setAttribute('type', type);
+            this.querySelector('i').className = type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+        });
+        
+        // Check password strength
+        password.addEventListener('input', function() {
+            const value = this.value;
+            let strength = 0;
+            
+            if (value.length >= 6) strength += 20;
+            if (value.length >= 10) strength += 20;
+            if (/[A-Z]/.test(value)) strength += 20;
+            if (/[0-9]/.test(value)) strength += 20;
+            if (/[^A-Za-z0-9]/.test(value)) strength += 20;
+            
+            passwordStrength.style.width = strength + '%';
+            
+            if (strength < 40) {
+                passwordStrength.className = 'progress-bar bg-danger';
+            } else if (strength < 80) {
+                passwordStrength.className = 'progress-bar bg-warning';
+            } else {
+                passwordStrength.className = 'progress-bar bg-success';
+            }
+            
+            checkPasswordsMatch();
+        });
+        
+        // Check if passwords match
+        confirmPassword.addEventListener('input', checkPasswordsMatch);
+        
+        function checkPasswordsMatch() {
+            if (password.value === '' && confirmPassword.value === '') {
+                passwordMatch.textContent = '';
+                passwordMatch.className = 'form-text';
+                return;
+            }
+            
+            if (password.value === confirmPassword.value) {
+                passwordMatch.textContent = 'Senhas conferem!';
+                passwordMatch.className = 'form-text text-success';
+                submitBtn.disabled = false;
+            } else {
+                passwordMatch.textContent = 'Senhas não conferem!';
+                passwordMatch.className = 'form-text text-danger';
+                submitBtn.disabled = true;
+            }
+        }
+        
+        // Form validation
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(event) {
+            if (password.value !== confirmPassword.value) {
+                event.preventDefault();
+                passwordMatch.textContent = 'Senhas não conferem!';
+                passwordMatch.className = 'form-text text-danger';
+                confirmPassword.focus();
+                return false;
+            }
+            
+            if (password.value.length < 6) {
+                event.preventDefault();
+                alert('A senha deve ter pelo menos 6 caracteres.');
+                password.focus();
+                return false;
+            }
+            
+            return true;
+        });
+    });
+</script>
+{% endblock %}

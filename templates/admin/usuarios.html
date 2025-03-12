@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+
+{% block title %}Gerenciar Usuários - Sistema de Planilhas{% endblock %}
+
+{% block extra_css %}
+<style>
+    .user-actions {
+        white-space: nowrap;
+    }
+    .table-responsive {
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+    .search-box {
+        max-width: 400px;
+    }
+    .filter-box {
+        max-width: 200px;
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(13, 110, 253, 0.05);
+    }
+    .table th {
+        background-color: #f8f9fa;
+    }
+    .user-status-badge {
+        min-width: 80px;
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('admin') }}">Administração</a></li>
+            <li class="breadcrumb-item active">Gerenciar Usuários</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Gerenciar Usuários</h2>
+    <a href="{{ url_for('novo_usuario') }}" class="btn btn-primary">
+        <i class="fas fa-user-plus me-1"></i>Novo Usuário
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header bg-light">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="input-group search-box">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control" id="searchUser" placeholder="Buscar por nome ou email..." onkeyup="filterUsers()">
+                </div>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="d-inline-block filter-box">
+                    <select class="form-select" id="userTypeFilter" onchange="filterUsers()">
+                        <option value="all">Todos os tipos</option>
+                        <option value="admin">Apenas admins</option>
+                        <option value="user">Apenas usuários</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0" id="usersTable">
+                <thead>
+                    <tr>
+                        <th style="width: 5%">#</th>
+                        <th style="width: 20%">Nome</th>
+                        <th style="width: 25%">Email</th>
+                        <th style="width: 15%">Tipo</th>
+                        <th style="width: 15%">Data de Cadastro</th>
+                        <th style="width: 20%">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if usuarios %}
+                        {% for usuario in usuarios %}
+                            <tr>
+                                <td>{{ usuario.id }}</td>
+                                <td>{{ usuario.username }}</td>
+                                <td>{{ usuario.email }}</td>
+                                <td>
+                                    {% if usuario.is_admin %}
+                                        <span class="badge bg-danger user-status-badge">Administrador</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary user-status-badge">Usuário</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ usuario.created_at.strftime('%d/%m/%Y') }}</td>
+                                <td class="user-actions">
+                                    <a href="{{ url_for('editar_usuario', user_id=usuario.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit"></i> Editar
+                                    </a>
+                                    {% if usuario.id != current_user.id %}
+                                        <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteUserModal{{ usuario.id }}">
+                                            <i class="fas fa-trash-alt"></i> Excluir
+                                        </button>
+                                        
+                                        <!-- Modal de Confirmação de Exclusão -->
+                                        <div class="modal fade" id="deleteUserModal{{ usuario.id }}" tabindex="-1" aria-labelledby="deleteUserModalLabel{{ usuario.id }}" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="deleteUserModalLabel{{ usuario.id }}">Confirmar Exclusão</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p>Tem certeza que deseja excluir o usuário <strong>{{ usuario.username }}</strong>?</p>
+                                                        <p class="text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Esta ação não pode ser desfeita.</p>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                        <form action="{{ url_for('excluir_usuario', user_id=usuario.id) }}" method="post" class="d-inline">
+                                                            <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <button type="button" class="btn btn-sm btn-outline-danger" disabled title="Você não pode excluir seu próprio usuário">
+                                            <i class="fas fa-trash-alt"></i> Excluir
+                                        </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <div class="alert alert-info mb-0">
+                                    <i class="fas fa-info-circle me-2"></i>Nenhum usuário cadastrado. 
+                                    <a href="{{ url_for('novo_usuario') }}" class="alert-link">Cadastre o primeiro usuário</a>.
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer bg-light">
+        <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">Total de usuários: {{ usuarios|length }}</small>
+            <a href="{{ url_for('admin') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-arrow-left me-1"></i>Voltar
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function filterUsers() {
+        const searchText = document.getElementById("searchUser").value.toLowerCase();
+        const userTypeFilter = document.getElementById("userTypeFilter").value;
+        const table = document.getElementById("usersTable");
+        const rows = table.getElementsByTagName("tr");
+        
+        // Skip header row (index 0)
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            
+            // Skip rows that are not actual user entries (like "no users found" message)
+            if (row.cells.length < 6) continue;
+            
+            const username = row.cells[1].textContent.toLowerCase();
+            const email = row.cells[2].textContent.toLowerCase();
+            const isAdmin = row.cells[3].textContent.trim().toLowerCase().includes("administrador");
+            
+            // Check if row matches search text
+            const matchesSearch = username.includes(searchText) || email.includes(searchText);
+            
+            // Check if row matches user type filter
+            let matchesType = true;
+            if (userTypeFilter === "admin") {
+                matchesType = isAdmin;
+            } else if (userTypeFilter === "user") {
+                matchesType = !isAdmin;
+            }
+            
+            // Show/hide row based on filters
+            if (matchesSearch && matchesType) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+        }
+    }
+</script>
+{% endblock %}
