@@ -1,15 +1,15 @@
-from flask import Flask, request, jsonify, render_template, redirect, url_for, flash, session
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from flask import Flask, request, render_template, redirect, url_for, flash
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime, timezone
+from config import get_config
+from models import db, User, Planilha, DadosPlanilha
+from modules.excel_parser import ExcelParser
 import os
 import json
 import pandas as pd
-import openpyxl
 import numpy as np
-from config import get_config
 
 def limitar(valor, limite):
     """Limita uma sequência a um número específico de itens"""
@@ -19,6 +19,8 @@ def limitar(valor, limite):
 app = Flask(__name__)
 app.config.from_object(get_config())
 
+# Inicialização de extensões
+db.init_app(app)
 app.jinja_env.filters['limitar'] = limitar
 
 @app.context_processor
@@ -29,107 +31,11 @@ def inject_now():
 # Criar pastas necessárias
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Inicialização do banco de dados
-db = SQLAlchemy(app)
-
 # Inicialização do sistema de login
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message = 'Por favor, faça login para acessar esta página.'
 login_manager.login_message_category = 'info'
-
-# Modelos de banco de dados
-class User(UserMixin, db.Model):
-    """Modelo de usuário"""
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128))
-    is_admin = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    def set_password(self, password):
-        """Define a senha criptografada"""
-        self.password_hash = generate_password_hash(password)
-        
-    def check_password(self, password):
-        """Verifica a senha"""
-        return check_password_hash(self.password_hash, password)
-
-class Planilha(db.Model):
-    """Modelo de planilha"""
-    id = db.Column(db.Integer, primary_key=True)
-    nome = db.Column(db.String(100), nullable=False)
-    descricao = db.Column(db.Text)
-    estrutura = db.Column(db.Text)  # JSON com a estrutura da planilha
-    formulas = db.Column(db.Text)   # JSON com as fórmulas
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-class DadosPlanilha(db.Model):
-    """Modelo para dados inseridos pelos usuários nas planilhas"""
-    id = db.Column(db.Integer, primary_key=True)
-    planilha_id = db.Column(db.Integer, db.ForeignKey('planilha.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    dados = db.Column(db.Text)  # JSON com os dados inseridos
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Relacionamentos
-    planilha = db.relationship('Planilha', backref='dados')
-    user = db.relationship('User', backref='dados_planilhas')
-
-# Classe para processamento de planilhas Excel
-class ExcelParser:
-    """Classe para análise e extração de dados de planilhas Excel"""
-    def __init__(self, excel_path):
-        self.excel_path = excel_path
-        self.sheets = {}
-        self.formulas = {}
-        self.structure = {}
-        
-    def extract_structure(self):
-        """Extrai a estrutura completa da planilha Excel"""
-        xls = pd.ExcelFile(self.excel_path)
-        
-        for sheet_name in xls.sheet_names:
-            # Lê a planilha
-            df = pd.read_excel(xls, sheet_name=sheet_name)
-            self.sheets[sheet_name] = df
-            
-            # Extrai estrutura de colunas e tipos de dados
-            column_structure = []
-            for col in df.columns:
-                data_type = str(df[col].dtype)
-                column_structure.append({
-                    "name": col,
-                    "type": data_type,
-                    "nullable": df[col].isnull().any()
-                })
-            
-            self.structure[sheet_name] = {
-                "columns": column_structure,
-                "rows": len(df)
-            }
-            
-        return self.structure
-    
-    def extract_formulas(self):
-        """Extrai as fórmulas da planilha usando openpyxl"""
-        wb = openpyxl.load_workbook(self.excel_path, data_only=False)
-        
-        for sheet_name in wb.sheetnames:
-            sheet = wb[sheet_name]
-            sheet_formulas = {}
-            
-            for row in sheet.iter_rows():
-                for cell in row:
-                    if cell.formula:
-                        sheet_formulas[cell.coordinate] = cell.formula
-            
-            self.formulas[sheet_name] = sheet_formulas
-        
-        return self.formulas
 
 # Helpers para o login
 @login_manager.user_loader
@@ -274,26 +180,6 @@ def salvar_planilha(planilha_id):
     
     flash('Dados salvos com sucesso!', 'success')
     return redirect(url_for('dashboard'))
-
-@app.route('/admin/planilhas/<int:planilha_id>/excluir', methods=['POST'])
-@login_required
-def excluir_planilha(planilha_id):
-    """Exclui uma planilha e todos os dados relacionados"""
-    if not current_user.is_admin:
-        flash('Acesso restrito a administradores.', 'danger')
-        return redirect(url_for('dashboard'))
-    
-    planilha = Planilha.query.get_or_404(planilha_id)
-    
-    # Excluir todos os dados relacionados à planilha
-    DadosPlanilha.query.filter_by(planilha_id=planilha.id).delete()
-    
-    # Excluir a planilha
-    db.session.delete(planilha)
-    db.session.commit()
-    
-    flash(f'Planilha {planilha.nome} excluída com sucesso!', 'success')
-    return redirect(url_for('gerenciar_planilhas'))
 
 @app.route('/relatorios')
 @login_required
@@ -544,10 +430,30 @@ def importar_planilha():
     
     return render_template('admin/importar_planilha.html')
 
+@app.route('/admin/planilhas/<int:planilha_id>/excluir', methods=['POST'])
+@login_required
+def excluir_planilha(planilha_id):
+    """Exclui uma planilha e todos os dados relacionados"""
+    if not current_user.is_admin:
+        flash('Acesso restrito a administradores.', 'danger')
+        return redirect(url_for('dashboard'))
+    
+    planilha = Planilha.query.get_or_404(planilha_id)
+    
+    # Excluir todos os dados relacionados à planilha
+    DadosPlanilha.query.filter_by(planilha_id=planilha.id).delete()
+    
+    # Excluir a planilha
+    db.session.delete(planilha)
+    db.session.commit()
+    
+    flash(f'Planilha {planilha.nome} excluída com sucesso!', 'success')
+    return redirect(url_for('gerenciar_planilhas'))
+
 # Inicialização do banco de dados e usuário admin
 def criar_tabelas_e_admin():
     """Cria tabelas e usuário admin"""
-    with app.app_context():  # Isso é importante!
+    with app.app_context():
         db.create_all()
         
         # Criar usuário administrador se não existir
