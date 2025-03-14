@@ -1,0 +1,382 @@
+/**
+ * Estilos principais do Sistema de Planilhas
+ */
+
+/* ====================
+   Estilos Gerais
+   ==================== */
+:root {
+  --primary-color: #0d6efd;
+  --primary-hover: #0b5ed7;
+  --secondary-color: #6c757d;
+  --success-color: #198754;
+  --danger-color: #dc3545;
+  --warning-color: #ffc107;
+  --info-color: #0dcaf0;
+  --light-color: #f8f9fa;
+  --dark-color: #212529;
+  --body-bg: #f5f7f9;
+  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --card-shadow-hover: 0 8px 16px rgba(0, 0, 0, 0.15);
+  --transition-speed: 0.3s;
+}
+
+body {
+  padding-top: 4.5rem;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--body-bg);
+  color: var(--dark-color);
+}
+
+.content {
+  flex: 1;
+  padding: 20px 0;
+}
+
+.footer {
+  background-color: var(--light-color);
+  padding: 1rem 0;
+  margin-top: auto;
+}
+
+/* ====================
+     Cabeçalho e Navegação
+     ==================== */
+.navbar-brand {
+  font-weight: bold;
+}
+
+.nav-link {
+  position: relative;
+}
+
+.nav-link.active::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0.5rem;
+  right: 0.5rem;
+  height: 3px;
+  background-color: var(--light-color);
+  border-radius: 3px;
+}
+
+/* ====================
+     Cards e Painéis
+     ==================== */
+.card {
+  border: none;
+  border-radius: 0.5rem;
+  box-shadow: var(--card-shadow);
+  transition: transform var(--transition-speed),
+    box-shadow var(--transition-speed);
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--card-shadow-hover);
+}
+
+.card-header {
+  background-color: transparent;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 1.25rem 1.5rem;
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+.card-footer {
+  background-color: transparent;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 1rem 1.5rem;
+}
+
+.card-planilha {
+  height: 100%;
+}
+
+.card-planilha .card-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.card-planilha .card-text {
+  flex-grow: 1;
+}
+
+.badge-status {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+/* ====================
+     Formulários e Inputs
+     ==================== */
+.form-label {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.form-control {
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ced4da;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.form-text {
+  font-size: 0.875rem;
+  color: var(--secondary-color);
+}
+
+.required-field::after {
+  content: "*";
+  color: var(--danger-color);
+  margin-left: 4px;
+}
+
+.password-toggle {
+  cursor: pointer;
+}
+
+/* ====================
+     Botões e Ações
+     ==================== */
+.btn {
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+.btn-outline-primary {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+/* ====================
+     Tabelas
+     ==================== */
+.table {
+  margin-bottom: 0;
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(13, 110, 253, 0.05);
+}
+
+.table th {
+  background-color: var(--light-color);
+  font-weight: 600;
+  border-top: none;
+}
+
+.table td,
+.table th {
+  padding: 0.75rem 1rem;
+  vertical-align: middle;
+}
+
+/* ====================
+     Timeline (para relatórios)
+     ==================== */
+.timeline {
+  position: relative;
+  padding-left: 30px;
+}
+
+.timeline-item {
+  position: relative;
+  padding-bottom: 1.5rem;
+}
+
+.timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+.timeline-item::before {
+  content: "";
+  position: absolute;
+  left: -23px;
+  top: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+  z-index: 1;
+}
+
+.timeline-item::after {
+  content: "";
+  position: absolute;
+  left: -16px;
+  top: 16px;
+  width: 2px;
+  height: calc(100% - 16px);
+  background-color: #dee2e6;
+}
+
+.timeline-item:last-child::after {
+  display: none;
+}
+
+.timeline-date {
+  font-size: 0.875rem;
+  color: var(--secondary-color);
+  margin-bottom: 0.25rem;
+}
+
+/* ====================
+     Uploads e Importação de Arquivos
+     ==================== */
+.upload-area {
+  border: 2px dashed #dee2e6;
+  border-radius: 0.5rem;
+  padding: 2rem;
+  text-align: center;
+  background-color: var(--light-color);
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.upload-area:hover,
+.upload-area.dragover {
+  border-color: var(--primary-color);
+  background-color: rgba(13, 110, 253, 0.05);
+}
+
+.upload-icon {
+  font-size: 3rem;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+}
+
+.file-preview {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  background-color: white;
+}
+
+.preview-icon {
+  font-size: 2rem;
+  margin-right: 1rem;
+  color: var(--success-color);
+}
+
+/* ====================
+     Estados Vazios
+     ==================== */
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  background-color: var(--light-color);
+  border-radius: 0.5rem;
+}
+
+.empty-state-icon {
+  font-size: 3rem;
+  color: #dee2e6;
+  margin-bottom: 1rem;
+}
+
+/* ====================
+     Utilitários
+     ==================== */
+.welcome-section {
+  background-color: var(--light-color);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.bg-gradient {
+  background: linear-gradient(to right, #0d6efd, #6610f2);
+  color: white;
+}
+
+.search-box {
+  max-width: 400px;
+}
+
+.filter-box {
+  max-width: 200px;
+}
+
+/* ====================
+     Responsividade
+     ==================== */
+@media (max-width: 767.98px) {
+  .card-title {
+    font-size: 1.25rem;
+  }
+
+  .welcome-section {
+    text-align: center;
+  }
+
+  .welcome-section .col-md-4 {
+    margin-top: 1rem;
+    text-align: center;
+  }
+
+  .search-box,
+  .filter-box {
+    max-width: 100%;
+  }
+}
+
+/* ====================
+     Impressão
+     ==================== */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .print-section {
+    display: block;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  body {
+    padding-top: 0 !important;
+  }
+
+  .card {
+    box-shadow: none;
+    border: 1px solid #dee2e6;
+  }
+}

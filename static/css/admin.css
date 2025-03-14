@@ -1,0 +1,239 @@
+/**
+ * Estilos específicos para a área administrativa
+ */
+
+/* ====================
+   Dashboard Admin
+   ==================== */
+.stats-card {
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s;
+  overflow: hidden;
+}
+
+.stats-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.stats-card .card-body {
+  padding: 1.5rem;
+}
+
+.stats-card .icon {
+  font-size: 2.5rem;
+  opacity: 0.8;
+}
+
+.stats-value {
+  font-size: 2rem;
+  font-weight: bold;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.stats-title {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+}
+
+/* Cores dos cards */
+.stats-card.bg-primary {
+  background: linear-gradient(45deg, #0d6efd, #0b5ed7);
+}
+
+.stats-card.bg-success {
+  background: linear-gradient(45deg, #198754, #157347);
+}
+
+.stats-card.bg-info {
+  background: linear-gradient(45deg, #0dcaf0, #0aa2c0);
+}
+
+.stats-card.bg-warning {
+  background: linear-gradient(45deg, #ffc107, #e5ac06);
+}
+
+.stats-card.bg-danger {
+  background: linear-gradient(45deg, #dc3545, #c42333);
+}
+
+/* ====================
+     Ações Rápidas
+     ==================== */
+.action-card {
+  border-radius: 0.5rem;
+  height: 100%;
+  transition: all 0.3s;
+}
+
+.action-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.action-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: #0d6efd;
+}
+
+/* ====================
+     Tabelas de Gerenciamento
+     ==================== */
+.admin-table {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.admin-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  border-top: none;
+  color: #495057;
+}
+
+.admin-table td {
+  vertical-align: middle;
+}
+
+.admin-actions {
+  white-space: nowrap;
+}
+
+.user-status-badge,
+.planilha-users {
+  min-width: 80px;
+  text-align: center;
+}
+
+.admin-table .dropdown-menu {
+  min-width: 120px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: none;
+  padding: 0.5rem 0;
+}
+
+.admin-table .dropdown-item {
+  padding: 0.5rem 1rem;
+}
+
+.admin-table .dropdown-item:active {
+  background-color: #0d6efd;
+}
+
+/* ====================
+     Visualizações (Lista/Grid)
+     ==================== */
+.view-toggle .btn {
+  padding: 0.4rem 0.75rem;
+}
+
+.grid-view .card {
+  height: 100%;
+}
+
+.list-view table td,
+.list-view table th {
+  padding: 0.75rem 1rem;
+}
+
+/* ====================
+     Formulários Admin
+     ==================== */
+.form-card {
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.form-header {
+  background-color: #f8f9fa;
+  padding: 1.5rem;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.form-body {
+  padding: 2rem;
+}
+
+.form-footer {
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-top: 1px solid #dee2e6;
+}
+
+/* Barra de progresso de força de senha */
+.password-strength-meter {
+  height: 5px;
+  margin-top: 8px;
+  transition: width 0.3s;
+}
+
+/* ====================
+     Responsividade
+     ==================== */
+@media (max-width: 767.98px) {
+  .stats-card {
+    margin-bottom: 1rem;
+  }
+
+  .action-card {
+    margin-bottom: 1rem;
+  }
+
+  .admin-actions {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .admin-actions .btn {
+    margin-bottom: 0.5rem;
+  }
+
+  .admin-table td {
+    padding: 0.75rem 0.5rem;
+  }
+}
+
+/* ====================
+     Animações
+     ==================== */
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ====================
+     Modal de Confirmação de Exclusão
+     ==================== */
+.modal-confirm .modal-header {
+  border-bottom: none;
+  padding: 1.5rem 1.5rem 0.5rem;
+}
+
+.modal-confirm .modal-body {
+  padding: 1.5rem;
+}
+
+.modal-confirm .modal-footer {
+  border-top: none;
+  padding: 0.5rem 1.5rem 1.5rem;
+}
+
+.modal-confirm .icon-box {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: #dc3545;
+}
